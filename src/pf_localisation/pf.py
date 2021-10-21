@@ -5,7 +5,8 @@ import rospy
 
 from . util import rotateQuaternion, getHeading
 from random import random
-
+from random import gauss
+import numpy as np
 from time import time
 
 
@@ -16,7 +17,9 @@ class PFLocaliser(PFLocaliserBase):
         super(PFLocaliser, self).__init__()
         
         # ----- Set motion model parameters
- 
+        self.ODOM_ROTATION_NOISE = 1
+        self.ODOM_TRANSLATION_NOISE = 1
+        self.ODOM_DRIFT_NOISE = 1
         # ----- Sensor model parameters
         self.NUMBER_PREDICTED_READINGS = 20     # Number of readings to predict
         
@@ -35,8 +38,30 @@ class PFLocaliser(PFLocaliserBase):
         :Return:
             | (geometry_msgs.msg.PoseArray) poses of the particles
         """
-        pass
+        poseArray = PoseArray()
 
+        # initiallise 20 particles
+        for i in range(20):
+
+            # generate gaussian random value of each particle
+            pose = Pose()
+            pose.position.x = np.random.uniform(0,10) + (gauss(1,0.5) * self.ODOM_TRANSLATION_NOISE)
+            pose.position.y = np.random.uniform(0,10) + (gauss(1,0.5) * self.ODOM_DRIFT_NOISE)
+            pose.position.z = 0
+            
+            q_orig = [0,0,0,1]
+            q_orig_msg = Quaternion(q_orig[0], q_orig[1], q_orig[2], q_orig[3])
+            uniform_ran_quat = rotateQuaternion(q_orig_msg, math.radians(np.random.uniform(0, 360)))
+            pose.orientation.x = uniform_ran_quat.x 
+            pose.orientation.y = uniform_ran_quat.y
+            pose.orientation.z = uniform_ran_quat.z # need to figure out how to add noise to this quat thing
+            pose.orientation.w = uniform_ran_quat.w
+
+            # add the partical to the PoseArray() object
+            poseArray.poses.append(pose)
+        
+        # return the initailised particle in the form of a PoseArray() object
+        return poseArray
  
     
     def update_particle_cloud(self, scan):
