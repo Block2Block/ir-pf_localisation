@@ -40,18 +40,18 @@ class PFLocaliser(PFLocaliserBase):
         """
         poseArray = PoseArray()
 
+        noise_parameter = 0.5
+
         # initiallise 20 particles
         for i in range(20):
 
             # generate gaussian random value of each particle
             pose = Pose()
-            pose.position.x = np.random.uniform(0,10) + (gauss(1,0.5) * self.ODOM_TRANSLATION_NOISE)
-            pose.position.y = np.random.uniform(0,10) + (gauss(1,0.5) * self.ODOM_DRIFT_NOISE)
-            pose.position.z = 0
+            pose.position.x = initialpose.position.x + (gauss(0,1) * noise_parameter)
+            pose.position.y = initialpose.position.y + (gauss(0,1) * noise_parameter)
+            pose.position.z = initialpose.position.z
             
-            q_orig = [0,0,0,1]
-            q_orig_msg = Quaternion(q_orig[0], q_orig[1], q_orig[2], q_orig[3])
-            uniform_ran_quat = rotateQuaternion(q_orig_msg, math.radians(np.random.uniform(0, 360)))
+            uniform_ran_quat = rotateQuaternion(initialpose.orientation, math.radians(np.random.uniform(0, 360)))
             pose.orientation.x = uniform_ran_quat.x 
             pose.orientation.y = uniform_ran_quat.y
             pose.orientation.z = uniform_ran_quat.z # need to figure out how to add noise to this quat thing
