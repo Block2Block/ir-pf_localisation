@@ -1,3 +1,4 @@
+from numpy.lib.financial import nper
 from geometry_msgs.msg import Pose, PoseArray, Quaternion
 from . pf_base import PFLocaliserBase
 import math
@@ -73,7 +74,37 @@ class PFLocaliser(PFLocaliserBase):
             | scan (sensor_msgs.msg.LaserScan): laser scan to use for update
 
          """
-        pass
+        updatedPoseList = []
+        updatedPoseArray = PoseArray() # this will be the new PoseArray to set the self.particlecloud
+
+        # Weight likelihood for each particles. p(z|x)
+        weights = []
+        for i in self.particlecloud.poses:
+            weights.append(self.sensor_model.get_weight(scan, self.particlecloud.poses[i]))
+
+        # Normalise the list of
+        numOfWeights = len(self.particlecloud.poses)
+        normalizer = 1 / float(sum(self.particlecloud.poses))
+        maxWeight = 0.0
+        minWeight = 0.0
+        normalisedWeights = []
+        
+        for i in weights:
+            normalisedWeights[i] = weights[i]
+
+        # Resample the particles - Roulette Wheel Method
+        updatedPoseList = np.random.choice(self.particlecloud.poses, len(self.particlecloud.poses), weights)
+        
+        # Add noise
+        for i in updatedPoseList:
+            updatedPose = Pose()
+            updatedPose.position.x = gauss(updatedPoseList[i].position.x, 0.2)
+            updatedPose.position.y = gauss(updatedPoseList[i].position.y, 0.2)
+            updatedPose.orientation = rotateQuaternion(updatedPoseList[i], math.radians(np.random.uniform(0, 10)))
+
+            updatedPoseArray.poses.append(updatedPose)
+
+        self.particlecloud.poses = updatedPoseArray.poses
 
     def estimate_pose(self):
         """
