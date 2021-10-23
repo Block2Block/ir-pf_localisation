@@ -84,13 +84,13 @@ class PFLocaliser(PFLocaliserBase):
 
         # Normalise the list of
         numOfWeights = len(self.particlecloud.poses)
-        normalizer = 1 / float(sum(self.particlecloud.poses))
+        normaliser = 1 / float(sum(self.particlecloud.poses))
         maxWeight = 0.0
         minWeight = 0.0
         normalisedWeights = []
         
         for i in weights:
-            normalisedWeights[i] = weights[i]
+            normalisedWeights[i] = weights[i] * normaliser
 
         # Resample the particles - Roulette Wheel Method
         updatedPoseList = np.random.choice(self.particlecloud.poses, len(self.particlecloud.poses), weights)
