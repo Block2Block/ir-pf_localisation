@@ -41,18 +41,21 @@ class PFLocaliser(PFLocaliserBase):
         """
         poseArray = PoseArray()
 
-        noise_parameter = 0.5
+        noise_parameter = 0.5 # what is a good noise_parameter? are there any pros and cons for having more noise?
+        # I think the answser: it is good to have more noise then less, since it this mean we will have a higher chance of capturing the position
+        # of the robot, whereas if we have less noise, there is a chance that we never got a particle which is close to where the robot is located.
 
-        # initiallise 20 particles
+        # generating particles - how many particles to generate? The more particles means higher chance of capturing the postion of the robot,
+        # less particles means that we might not have particle which is close to where the robot it located.
         for i in range(20):
 
-            # generate gaussian random value of each particle
+            # adding gauss random noise to the 
             pose = Pose()
             pose.position.x = initialpose.pose.pose.position.x + (gauss(0,1) * noise_parameter)
             pose.position.y = initialpose.pose.pose.position.y + (gauss(0,1) * noise_parameter)
             pose.position.z = initialpose.pose.pose.position.z
             
-            uniform_ran_quat = rotateQuaternion(initialpose.pose.pose.orientation, math.radians(np.random.uniform(0, 360)))
+            uniform_ran_quat = rotateQuaternion(initialpose.pose.pose.orientation, math.radians(np.random.uniform(0, 360))) # might need to change to guassian noise
             pose.orientation.x = uniform_ran_quat.x 
             pose.orientation.y = uniform_ran_quat.y
             pose.orientation.z = uniform_ran_quat.z # need to figure out how to add noise to this quat thing
@@ -63,7 +66,6 @@ class PFLocaliser(PFLocaliserBase):
         
         # return the initailised particle in the form of a PoseArray() object
         return poseArray
- 
     
     def update_particle_cloud(self, scan):
         """
@@ -92,7 +94,7 @@ class PFLocaliser(PFLocaliserBase):
         for i in weights:
             normalisedWeights[i] = weights[i] * normaliser
 
-        # Resample the particles - Roulette Wheel Method
+        # Resample the particles - Roulette Wheel Method - might need to implement this, instead of using this numpy function
         updatedPoseList = np.random.choice(self.particlecloud.poses, len(self.particlecloud.poses), weights)
         
         # Add noise
@@ -122,4 +124,6 @@ class PFLocaliser(PFLocaliserBase):
         :Return:
             | (geometry_msgs.msg.Pose) robot's estimated pose.
          """
-        pass
+        sumofX = 0
+        sumofY = 0
+        sumof
