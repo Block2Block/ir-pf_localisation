@@ -81,24 +81,24 @@ class PFLocaliser(PFLocaliserBase):
 
         # Weight likelihood for each particles. p(z|x)
         weights = []
-        for i in self.particlecloud.poses:
+        for i in range(len(self.particlecloud.poses)):
             weights.append(self.sensor_model.get_weight(scan, self.particlecloud.poses[i]))
 
         # Normalise the list of
         numOfWeights = len(self.particlecloud.poses)
-        normaliser = 1 / float(sum(self.particlecloud.poses))
+        normaliser = 1 / float(len(self.particlecloud.poses))
         maxWeight = 0.0
         minWeight = 0.0
         normalisedWeights = []
         
-        for i in weights:
-            normalisedWeights[i] = weights[i] * normaliser
+        for i in range(len(weights)):
+            normalisedWeights.append(weights[i] * normaliser)
 
         # Resample the particles - Roulette Wheel Method - might need to implement this, instead of using this numpy function
         updatedPoseList = np.random.choice(self.particlecloud.poses, len(self.particlecloud.poses), weights)
         
         # Add noise
-        for i in updatedPoseList:
+        for i in range(len(updatedPoseList)):
             updatedPose = Pose()
             updatedPose.position.x = gauss(updatedPoseList[i].position.x, 0.2)
             updatedPose.position.y = gauss(updatedPoseList[i].position.y, 0.2)
@@ -106,7 +106,7 @@ class PFLocaliser(PFLocaliserBase):
 
             updatedPoseArray.poses.append(updatedPose)
 
-        self.particlecloud.poses = updatedPoseArray.poses
+        self.particlecloud = updatedPoseArray
 
     def estimate_pose(self):
         """
@@ -140,7 +140,7 @@ class PFLocaliser(PFLocaliserBase):
 
         sumofOrientation = 0
 
-        for i in range(self.particlecloud.poses):
+        for i in range(len(self.particlecloud.poses)):
             sumofX = sumofX + self.particlecloud.poses[i].position.x
             sumofY = sumofY + self.particlecloud.poses[i].position.y
 
