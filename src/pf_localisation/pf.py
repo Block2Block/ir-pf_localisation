@@ -124,6 +124,37 @@ class PFLocaliser(PFLocaliserBase):
         :Return:
             | (geometry_msgs.msg.Pose) robot's estimated pose.
          """
+
+        # These are to store the sum of particles, so we can than take the average, to get the estimate pose.
         sumofX = 0
         sumofY = 0
-        sumof
+        sumofQX = 0
+        sumofQY = 0
+        sumofQZ = 0
+        sumofQW = 0
+
+        numOfParticles = len(self.particlecloud.poses)
+
+        # Do we need this initilisation it? Probably not.
+        # averageQuat = Quaternion()
+
+        sumofOrientation = 0
+
+        for i in range(self.particlecloud.poses):
+            sumofX = sumofX + self.particlecloud.poses[i].position.x
+            sumofY = sumofY + self.particlecloud.poses[i].position.y
+
+            sumofQX = sumofQX + self.particlecloud.poses[i].orientation.x
+            sumofQY = sumofQY + self.particlecloud.poses[i].orientation.y
+            sumofQZ = sumofQZ + self.particlecloud.poses[i].orientation.z
+            sumofQW = sumofQW + self.particlecloud.poses[i].orientation.w
+
+        averagePose = Pose()
+        averagePose.position.x = sumofX / numOfParticles
+        averagePose.position.y = sumofY / numOfParticles
+        averagePose.orientation.x = sumofQX
+        averagePose.orientation.y = sumofQY
+        averagePose.orientation.z = sumofQZ
+        averagePose.orientation.w = sumofQW
+
+        return averagePose
