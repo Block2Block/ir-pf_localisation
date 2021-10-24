@@ -102,7 +102,7 @@ class PFLocaliser(PFLocaliserBase):
             updatedPose = Pose()
             updatedPose.position.x = gauss(updatedPoseList[i].position.x, 0.2)
             updatedPose.position.y = gauss(updatedPoseList[i].position.y, 0.2)
-            updatedPose.orientation = rotateQuaternion(updatedPoseList[i], math.radians(np.random.uniform(0, 10)))
+            updatedPose.orientation = rotateQuaternion(updatedPoseList[i].orientation, math.radians(np.random.uniform(0, 10)))
 
             updatedPoseArray.poses.append(updatedPose)
 
