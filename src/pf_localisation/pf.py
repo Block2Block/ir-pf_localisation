@@ -41,13 +41,15 @@ class PFLocaliser(PFLocaliserBase):
         """
         poseArray = PoseArray()
 
+        numOfParticles = 500
+
         noise_parameter = 0.5 # what is a good noise_parameter? are there any pros and cons for having more noise?
         # I think the answser: it is good to have more noise then less, since it this mean we will have a higher chance of capturing the position
         # of the robot, whereas if we have less noise, there is a chance that we never got a particle which is close to where the robot is located.
 
         # generating particles - how many particles to generate? The more particles means higher chance of capturing the postion of the robot,
         # less particles means that we might not have particle which is close to where the robot it located.
-        for i in range(500):
+        for i in range(numOfParticles):
 
             # adding gauss random noise to the 
             pose = Pose()
