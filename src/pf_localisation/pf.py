@@ -42,17 +42,12 @@ class PFLocaliser(PFLocaliserBase):
         :Return:
             | (geometry_msgs.msg.PoseArray) poses of the particles
         """
+
         poseArray = PoseArray()
+        numofParticles = 300
+        noise_parameter = 1 
 
-        numOfParticles = 300
-
-        noise_parameter = 1 # what is a good noise_parameter? are there any pros and cons for having more noise?
-        # I think the answser: it is good to have more noise then less, since it this mean we will have a higher chance of capturing the position
-        # of the robot, whereas if we have less noise, there is a chance that we never got a particle which is close to where the robot is located.
-
-        # generating particles - how many particles to generate? The more particles means higher chance of capturing the postion of the robot,
-        # less particles means that we might not have particle which is close to where the robot it located.
-        for i in range(numOfParticles):
+        for i in range(numofParticles):
 
             # adding gauss random noise to the 
             pose = Pose()
@@ -60,11 +55,7 @@ class PFLocaliser(PFLocaliserBase):
             pose.position.y = initialpose.pose.pose.position.y + (gauss(0,1) * noise_parameter)
             pose.position.z = initialpose.pose.pose.position.z
             
-            orientationWithNoise = rotateQuaternion(initialpose.pose.pose.orientation, math.radians(gauss(math.degrees(getHeading(initialpose.pose.pose.orientation)),10))) # might need to change to guassian noise
-            pose.orientation.x = orientationWithNoise.x 
-            pose.orientation.y = orientationWithNoise.y
-            pose.orientation.z = orientationWithNoise.z # need to figure out how to add noise to this quat thing
-            pose.orientation.w = orientationWithNoise.w
+            pose.orientation = rotateQuaternion(initialpose.pose.pose.orientation, math.radians(gauss(math.degrees(getHeading(initialpose.pose.pose.orientation)),10))) # might need to change to guassian noise
 
             # add the partical to the PoseArray() object
             poseArray.poses.append(pose)
@@ -82,8 +73,7 @@ class PFLocaliser(PFLocaliserBase):
 
          """
 
-        numOfParticles = len(self.particlecloud.poses)
-
+        numofParticles = len(self.particlecloud.poses)
         updatedPoseList = []
         updatedPoseArray = PoseArray() # this will be the new PoseArray to set the self.particlecloud
 
@@ -92,7 +82,7 @@ class PFLocaliser(PFLocaliserBase):
         for i in range(len(self.particlecloud.poses)):
             weights.append(self.sensor_model.get_weight(scan, self.particlecloud.poses[i]))
 
-        # Normalise the list of
+        # Normalise the list of weights
         normaliser = 1 / (sum(weights))
         normalisedWeights = []
         
@@ -102,17 +92,17 @@ class PFLocaliser(PFLocaliserBase):
 
         # Resample the particles - Roulette Wheel Method - might need to implement this, instead of using this numpy function
         #updatedPoseList = np.random.choice(self.particlecloud.poses, len(self.particlecloud.poses), normalisedWeights)
-        index = int(random.random() * numOfParticles)
+        index = int(random.random() * numofParticles)
         beta = 0    
         maxWeight = max(weights)
-        for i in range(numOfParticles):
+        for i in range(numofParticles):
             beta = beta + random.random() * 2 * maxWeight
             while beta > weights[index]:
                 beta = beta - weights[index]
-                index = (index + 1) % numOfParticles
+                index = (index + 1) % numofParticles
             updatedPoseList.append(self.particlecloud.poses[index])
 
-        # Add noise
+        # Add noise - need to make this only run in certain condition, such as when the speard of the particles is high
         for i in range(len(updatedPoseList)):
             updatedPose = Pose()
             updatedPose.position.x = gauss(updatedPoseList[i].position.x, 0.2)
@@ -165,13 +155,9 @@ class PFLocaliser(PFLocaliserBase):
         sumofQZ = 0
         sumofQW = 0
 
-        numOfParticles = len(self.particlecloud.poses)
+        numofParticles = len(self.particlecloud.poses)
 
-        # Do we need this initilisation it? Probably not.
-        # averageQuat = Quaternion()
-
-        sumofOrientation = 0
-
+        # Summing the particles
         for i in range(len(self.particlecloud.poses)):
             sumofX = sumofX + self.particlecloud.poses[i].position.x
             sumofY = sumofY + self.particlecloud.poses[i].position.y
@@ -181,9 +167,10 @@ class PFLocaliser(PFLocaliserBase):
             sumofQZ = sumofQZ + self.particlecloud.poses[i].orientation.z
             sumofQW = sumofQW + self.particlecloud.poses[i].orientation.w
 
+        # Averaging the particles
         averagePose = Pose()
-        averagePose.position.x = sumofX / numOfParticles
-        averagePose.position.y = sumofY / numOfParticles
+        averagePose.position.x = sumofX / numofParticles
+        averagePose.position.y = sumofY / numofParticles
         averagePose.orientation.x = sumofQX
         averagePose.orientation.y = sumofQY
         averagePose.orientation.z = sumofQZ
