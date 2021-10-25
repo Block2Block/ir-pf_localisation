@@ -72,7 +72,7 @@ class PFLocaliser(PFLocaliserBase):
             | scan (sensor_msgs.msg.LaserScan): laser scan to use for update
 
          """
-
+        
         numofParticles = len(self.particlecloud.poses)
         updatedPoseList = []
         updatedPoseArray = PoseArray() # this will be the new PoseArray to set the self.particlecloud
@@ -85,10 +85,8 @@ class PFLocaliser(PFLocaliserBase):
         # Normalise the list of weights
         normaliser = 1 / (sum(weights))
         normalisedWeights = []
-        
-        # normalise the weight and round it to nearest int
         for i in range(len(weights)):
-            normalisedWeights.append(round(weights[i] * normaliser))
+            normalisedWeights.append(weights[i] * normaliser)
 
         # Resample the particles - Roulette Wheel Method - might need to implement this, instead of using this numpy function
         #updatedPoseList = np.random.choice(self.particlecloud.poses, len(self.particlecloud.poses), normalisedWeights)
