@@ -21,9 +21,9 @@ class PFLocaliser(PFLocaliserBase):
         super(PFLocaliser, self).__init__()
         
         # ----- Set motion model parameters
-        self.ODOM_ROTATION_NOISE = 0.8
-        self.ODOM_TRANSLATION_NOISE = 0.8
-        self.ODOM_DRIFT_NOISE = 0.8
+        self.ODOM_ROTATION_NOISE = gauss(1, 0.2)
+        self.ODOM_TRANSLATION_NOISE = gauss(1, 0.2)
+        self.ODOM_DRIFT_NOISE = gauss(1, 0.2)
         # ----- Sensor model parameters
         self.NUMBER_PREDICTED_READINGS = 20     # Number of readings to predict
         
@@ -44,9 +44,9 @@ class PFLocaliser(PFLocaliserBase):
         """
         poseArray = PoseArray()
 
-        numOfParticles = 500
+        numOfParticles = 300
 
-        noise_parameter = 0.5 # what is a good noise_parameter? are there any pros and cons for having more noise?
+        noise_parameter = 1 # what is a good noise_parameter? are there any pros and cons for having more noise?
         # I think the answser: it is good to have more noise then less, since it this mean we will have a higher chance of capturing the position
         # of the robot, whereas if we have less noise, there is a chance that we never got a particle which is close to where the robot is located.
 
@@ -120,6 +120,23 @@ class PFLocaliser(PFLocaliserBase):
             updatedPose.orientation = rotateQuaternion(updatedPoseList[i].orientation, math.radians(gauss(math.degrees(getHeading(updatedPoseList[i].orientation)),10)))
 
             updatedPoseArray.poses.append(updatedPose)
+
+        # Scatter the particles - adding 5% of the total particles to randomly generate
+        for i in range(15):
+            scatterPose = Pose()
+            scatterPose.position.x = random.uniform(-10, 10)
+            scatterPose.position.y = random.uniform(-10, 10)
+            scatterPose.position.z = 0
+
+            q_orig = [0,0,0,1]
+            q_orig_msg = Quaternion(q_orig[0], q_orig[1], q_orig[2], q_orig[3])
+            uniform_ran_quat = rotateQuaternion(q_orig_msg, math.radians(np.random.uniform(0, 360)))
+            scatterPose.orientation.x = uniform_ran_quat.x 
+            scatterPose.orientation.y = uniform_ran_quat.y
+            scatterPose.orientation.z = uniform_ran_quat.z # need to figure out how to add noise to this quat thing
+            scatterPose.orientation.w = uniform_ran_quat.w
+
+            updatedPoseArray.poses.append(scatterPose)
 
         self.particlecloud = updatedPoseArray
 
