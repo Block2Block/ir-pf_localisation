@@ -5,7 +5,7 @@ import math
 import rospy
 
 from . util import rotateQuaternion, getHeading
-from random import random
+from random import random, uniform
 from random import gauss
 import numpy as np
 from time import time
@@ -18,9 +18,9 @@ class PFLocaliser(PFLocaliserBase):
         super(PFLocaliser, self).__init__()
         
         # ----- Set motion model parameters
-        self.ODOM_ROTATION_NOISE = 1
-        self.ODOM_TRANSLATION_NOISE = 1
-        self.ODOM_DRIFT_NOISE = 1
+        self.ODOM_ROTATION_NOISE = 0.8
+        self.ODOM_TRANSLATION_NOISE = 0.8
+        self.ODOM_DRIFT_NOISE = 0.8
         # ----- Sensor model parameters
         self.NUMBER_PREDICTED_READINGS = 20     # Number of readings to predict
         
@@ -47,7 +47,7 @@ class PFLocaliser(PFLocaliserBase):
 
         # generating particles - how many particles to generate? The more particles means higher chance of capturing the postion of the robot,
         # less particles means that we might not have particle which is close to where the robot it located.
-        for i in range(20):
+        for i in range(500):
 
             # adding gauss random noise to the 
             pose = Pose()
@@ -55,7 +55,7 @@ class PFLocaliser(PFLocaliserBase):
             pose.position.y = initialpose.pose.pose.position.y + (gauss(0,1) * noise_parameter)
             pose.position.z = initialpose.pose.pose.position.z
             
-            uniform_ran_quat = rotateQuaternion(initialpose.pose.pose.orientation, math.radians(np.random.uniform(0, 360))) # might need to change to guassian noise
+            uniform_ran_quat = rotateQuaternion(initialpose.pose.pose.orientation, math.radians(gauss(math.degrees(getHeading(initialpose.pose.pose.orientation)),20))) # might need to change to guassian noise
             pose.orientation.x = uniform_ran_quat.x 
             pose.orientation.y = uniform_ran_quat.y
             pose.orientation.z = uniform_ran_quat.z # need to figure out how to add noise to this quat thing
@@ -76,6 +76,7 @@ class PFLocaliser(PFLocaliserBase):
             | scan (sensor_msgs.msg.LaserScan): laser scan to use for update
 
          """
+
         updatedPoseList = []
         updatedPoseArray = PoseArray() # this will be the new PoseArray to set the self.particlecloud
 
@@ -85,24 +86,22 @@ class PFLocaliser(PFLocaliserBase):
             weights.append(self.sensor_model.get_weight(scan, self.particlecloud.poses[i]))
 
         # Normalise the list of
-        numOfWeights = len(self.particlecloud.poses)
-        normaliser = 1 / float(len(self.particlecloud.poses))
-        maxWeight = 0.0
-        minWeight = 0.0
+        normaliser = 1 / (sum(weights))
         normalisedWeights = []
         
+        # normalise the weight and round it to nearest int
         for i in range(len(weights)):
-            normalisedWeights.append(weights[i] * normaliser)
+            normalisedWeights.append(round(weights[i] * normaliser))
 
         # Resample the particles - Roulette Wheel Method - might need to implement this, instead of using this numpy function
-        updatedPoseList = np.random.choice(self.particlecloud.poses, len(self.particlecloud.poses), weights)
+        updatedPoseList = np.random.choice(self.particlecloud.poses, len(self.particlecloud.poses), normalisedWeights)
         
         # Add noise
         for i in range(len(updatedPoseList)):
             updatedPose = Pose()
             updatedPose.position.x = gauss(updatedPoseList[i].position.x, 0.2)
             updatedPose.position.y = gauss(updatedPoseList[i].position.y, 0.2)
-            updatedPose.orientation = rotateQuaternion(updatedPoseList[i].orientation, math.radians(np.random.uniform(0, 10)))
+            updatedPose.orientation = rotateQuaternion(updatedPoseList[i].orientation, math.radians(gauss(math.degrees(getHeading(updatedPoseList[i].orientation)),20)))
 
             updatedPoseArray.poses.append(updatedPose)
 
