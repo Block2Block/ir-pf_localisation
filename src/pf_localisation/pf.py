@@ -89,8 +89,9 @@ class PFLocaliser(PFLocaliserBase):
         for i in range(len(weights)):
             normalisedWeights.append(weights[i] * normaliser)
 
-        # Resample the particles - Roulette Wheel Method - might need to implement this, instead of using this numpy function
+        # Basic Roulette Wheel Resampling
         #updatedPoseList = np.random.choice(self.particlecloud.poses, len(self.particlecloud.poses), normalisedWeights)
+
         # index = int(random.random() * numofParticles)
         # beta = 0    
         # maxWeight = max(weights)
@@ -127,18 +128,18 @@ class PFLocaliser(PFLocaliserBase):
 
             updatedPoseArray.poses.append(updatedPose)
 
-        # Scatter the particles - adding 5% of the total particles to randomly generate
-        for i in range(15):
-            scatterPose = Pose()
-            scatterPose.position.x = random.uniform(-10, 10)
-            scatterPose.position.y = random.uniform(-10, 10)
-            scatterPose.position.z = 0
+        # # Scatter the particles - adding 5% of the total particles to randomly generate
+        # for i in range(15):
+        #     scatterPose = Pose()
+        #     scatterPose.position.x = random.uniform(-10, 10)
+        #     scatterPose.position.y = random.uniform(-10, 10)
+        #     scatterPose.position.z = 0
 
-            q_orig = [0,0,0,1]
-            q_orig_msg = Quaternion(q_orig[0], q_orig[1], q_orig[2], q_orig[3])
-            scatterPose.orientation = rotateQuaternion(q_orig_msg, math.radians(np.random.uniform(0, 360)))
+        #     q_orig = [0,0,0,1]
+        #     q_orig_msg = Quaternion(q_orig[0], q_orig[1], q_orig[2], q_orig[3])
+        #     scatterPose.orientation = rotateQuaternion(q_orig_msg, math.radians(np.random.uniform(0, 360)))
 
-            updatedPoseArray.poses.append(scatterPose)
+        #     updatedPoseArray.poses.append(scatterPose)
 
         self.particlecloud = updatedPoseArray
 
