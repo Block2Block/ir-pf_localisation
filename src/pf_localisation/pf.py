@@ -93,16 +93,16 @@ class PFLocaliser(PFLocaliserBase):
         # Basic Roulette Wheel Resampling
         #updatedPoseList = np.random.choice(self.particlecloud.poses, len(self.particlecloud.poses), normalisedWeights)
 
-        # Stratified Resampling
-        # index = int(uniform(0, numofParticles))
+        # Another type of Rouletee Wheel thats
+        # index = int(uniform(0, numofParticles)) # first index drawn at random
         # beta = 0    
         # maxWeight = max(normalisedWeights)
         # for i in range(numofParticles):
-        #     beta = beta + random.random() * 2 * maxWeight
-        #     while normalisedWeights[index] < beta: 
+        #     beta = beta + uniform(0, 1) * 2 * maxWeight  # this is the step we take
+        #     while beta > normalisedWeights[index]: 
         #         beta = beta - normalisedWeights[index]
         #         index = (index + 1) % numofParticles
-        #     updatedPoseList.append(self.particlecloud.poses[index])
+        #     updatedPoseList.append(self.particlecloud.poses[index])  # add this particle
 
         # Systematic Resamping
         m = len(self.particlecloud.poses) # the number of particles we want, and we want the same number of particles as we initialised.
