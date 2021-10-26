@@ -74,31 +74,33 @@ class PFLocaliser(PFLocaliserBase):
 
          """
 
-        numofParticles = len(self.particlecloud.poses)
-        updatedPoseList = []
-        updatedPoseArray = PoseArray() # this will be the new PoseArray to set the self.particlecloud
-
         # Weight likelihood for each particles. p(z|x)
         weights = []
         for i in range(len(self.particlecloud.poses)):
             weights.append(self.sensor_model.get_weight(scan, self.particlecloud.poses[i]))
 
-        # Normalise the list of weights
+        # Normalise the list of weights - construct the outter ring
         normaliser = 1 / (sum(weights))
         normalisedWeights = []
         for i in range(len(weights)):
             normalisedWeights.append(weights[i] * normaliser)
 
+
+        numofParticles = len(self.particlecloud.poses)
+        updatedPoseList = []
+        updatedPoseArray = PoseArray() # this will be the new PoseArray to set the self.particlecloud
+
         # Basic Roulette Wheel Resampling
         #updatedPoseList = np.random.choice(self.particlecloud.poses, len(self.particlecloud.poses), normalisedWeights)
 
-        # index = int(random.random() * numofParticles)
+        # Stratified Resampling
+        # index = int(uniform(0, numofParticles))
         # beta = 0    
-        # maxWeight = max(weights)
+        # maxWeight = max(normalisedWeights)
         # for i in range(numofParticles):
         #     beta = beta + random.random() * 2 * maxWeight
-        #     while beta > weights[index]:
-        #         beta = beta - weights[index]
+        #     while normalisedWeights[index] < beta: 
+        #         beta = beta - normalisedWeights[index]
         #         index = (index + 1) % numofParticles
         #     updatedPoseList.append(self.particlecloud.poses[index])
 
