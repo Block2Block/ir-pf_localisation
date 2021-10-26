@@ -126,6 +126,21 @@ class PFLocaliser(PFLocaliserBase):
             else:
                 i = i + 1
 
+        # #low variance sampling
+        # #implementing based on the algorithm table 4.4 of Probabilistic Robotics
+        # resampledPose = []
+        # resampledPoseArray = PoseArray()
+        # M = len(self.particlecloud.poses)
+        # r = random.uniform(0,1/M)
+        # c = weights[1]
+        # i = 1
+        # for m in range(1,M):
+        #     U = r + (m-1)*(1/M)
+        #     while U>c:
+        #         i += 1
+        #         c += weights[i]
+        #     resampledPose.append(self.particlecloud.poses[i])
+
         # Add noise - need to make this only run in certain condition, such as when the speard of the particles is high
         for i in range(len(updatedPoseList)):
             updatedPose = Pose()
