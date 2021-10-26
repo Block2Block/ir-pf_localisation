@@ -1,5 +1,6 @@
 from functools import partial
 from textwrap import fill
+from numpy.core.fromnumeric import cumsum
 from numpy.lib.financial import nper
 from geometry_msgs.msg import Pose, PoseArray, Quaternion
 from . pf_base import PFLocaliserBase
@@ -55,7 +56,7 @@ class PFLocaliser(PFLocaliserBase):
             pose.position.y = initialpose.pose.pose.position.y + (gauss(0,1) * noise_parameter)
             pose.position.z = initialpose.pose.pose.position.z
             
-            pose.orientation = rotateQuaternion(initialpose.pose.pose.orientation, math.radians(gauss(math.degrees(getHeading(initialpose.pose.pose.orientation)),10))) # might need to change to guassian noise
+            pose.orientation = rotateQuaternion(initialpose.pose.pose.orientation, math.radians(gauss(math.degrees(getHeading(initialpose.pose.pose.orientation)),2))) # might need to change to guassian noise
 
             # add the partical to the PoseArray() object
             poseArray.poses.append(pose)
@@ -72,7 +73,7 @@ class PFLocaliser(PFLocaliserBase):
             | scan (sensor_msgs.msg.LaserScan): laser scan to use for update
 
          """
-        
+
         numofParticles = len(self.particlecloud.poses)
         updatedPoseList = []
         updatedPoseArray = PoseArray() # this will be the new PoseArray to set the self.particlecloud
@@ -90,22 +91,39 @@ class PFLocaliser(PFLocaliserBase):
 
         # Resample the particles - Roulette Wheel Method - might need to implement this, instead of using this numpy function
         #updatedPoseList = np.random.choice(self.particlecloud.poses, len(self.particlecloud.poses), normalisedWeights)
-        index = int(random.random() * numofParticles)
-        beta = 0    
-        maxWeight = max(weights)
-        for i in range(numofParticles):
-            beta = beta + random.random() * 2 * maxWeight
-            while beta > weights[index]:
-                beta = beta - weights[index]
-                index = (index + 1) % numofParticles
-            updatedPoseList.append(self.particlecloud.poses[index])
+        # index = int(random.random() * numofParticles)
+        # beta = 0    
+        # maxWeight = max(weights)
+        # for i in range(numofParticles):
+        #     beta = beta + random.random() * 2 * maxWeight
+        #     while beta > weights[index]:
+        #         beta = beta - weights[index]
+        #         index = (index + 1) % numofParticles
+        #     updatedPoseList.append(self.particlecloud.poses[index])
+
+        # Systematic Resamping
+        m = len(self.particlecloud.poses) # the number of particles we want, and we want the same number of particles as we initialised.
+        cumSum = np.cumsum(normalisedWeights) # cumulative sum (outter ring)
+        # offset = (random.random() + np.arange(m)) / m
+        u = uniform(0, 1 / m)
+
+        i = 0
+        j = 0
+
+        while j < m:
+            if (u <= cumSum[i]):
+                updatedPoseList.append(self.particlecloud.poses[i])
+                j = j + 1
+                u = u + 1 / m
+            else:
+                i = i + 1
 
         # Add noise - need to make this only run in certain condition, such as when the speard of the particles is high
         for i in range(len(updatedPoseList)):
             updatedPose = Pose()
             updatedPose.position.x = gauss(updatedPoseList[i].position.x, 0.2)
             updatedPose.position.y = gauss(updatedPoseList[i].position.y, 0.2)
-            updatedPose.orientation = rotateQuaternion(updatedPoseList[i].orientation, math.radians(gauss(math.degrees(getHeading(updatedPoseList[i].orientation)),10)))
+            updatedPose.orientation = rotateQuaternion(updatedPoseList[i].orientation, math.radians(gauss(math.degrees(getHeading(updatedPoseList[i].orientation)),2)))
 
             updatedPoseArray.poses.append(updatedPose)
 
@@ -118,11 +136,7 @@ class PFLocaliser(PFLocaliserBase):
 
             q_orig = [0,0,0,1]
             q_orig_msg = Quaternion(q_orig[0], q_orig[1], q_orig[2], q_orig[3])
-            uniform_ran_quat = rotateQuaternion(q_orig_msg, math.radians(np.random.uniform(0, 360)))
-            scatterPose.orientation.x = uniform_ran_quat.x 
-            scatterPose.orientation.y = uniform_ran_quat.y
-            scatterPose.orientation.z = uniform_ran_quat.z # need to figure out how to add noise to this quat thing
-            scatterPose.orientation.w = uniform_ran_quat.w
+            scatterPose.orientation = rotateQuaternion(q_orig_msg, math.radians(np.random.uniform(0, 360)))
 
             updatedPoseArray.poses.append(scatterPose)
 
