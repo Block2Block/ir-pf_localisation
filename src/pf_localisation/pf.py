@@ -22,9 +22,9 @@ class PFLocaliser(PFLocaliserBase):
         super(PFLocaliser, self).__init__()
         
         # ----- Set motion model parameters
-        self.ODOM_ROTATION_NOISE = gauss(1, 0.2)
-        self.ODOM_TRANSLATION_NOISE = gauss(1, 0.2)
-        self.ODOM_DRIFT_NOISE = gauss(1, 0.2)
+        self.ODOM_ROTATION_NOISE = gauss(0.5, 0.2)
+        self.ODOM_TRANSLATION_NOISE = gauss(0.5, 0.2)
+        self.ODOM_DRIFT_NOISE = gauss(0.5, 0.2)
         # ----- Sensor model parameters
         self.NUMBER_PREDICTED_READINGS = 20     # Number of readings to predict
         
@@ -45,8 +45,8 @@ class PFLocaliser(PFLocaliserBase):
         """
 
         poseArray = PoseArray()
-        numofParticles = 300
-        noise_parameter = 1 
+        numofParticles = 500
+        noise_parameter = 1
 
         for i in range(numofParticles):
 
@@ -56,7 +56,7 @@ class PFLocaliser(PFLocaliserBase):
             pose.position.y = initialpose.pose.pose.position.y + (gauss(0,1) * noise_parameter)
             pose.position.z = initialpose.pose.pose.position.z
             
-            pose.orientation = rotateQuaternion(initialpose.pose.pose.orientation, math.radians(gauss(math.degrees(getHeading(initialpose.pose.pose.orientation)),2))) # might need to change to guassian noise
+            pose.orientation = rotateQuaternion(initialpose.pose.pose.orientation, math.radians(gauss(math.degrees(getHeading(initialpose.pose.pose.orientation)),1))) # might need to change to guassian noise
 
             # add the partical to the PoseArray() object
             poseArray.poses.append(pose)
@@ -73,6 +73,8 @@ class PFLocaliser(PFLocaliserBase):
             | scan (sensor_msgs.msg.LaserScan): laser scan to use for update
 
          """
+        
+        scatterIndex = 0
 
         # Weight likelihood for each particles. p(z|x)
         weights = []
@@ -104,6 +106,9 @@ class PFLocaliser(PFLocaliserBase):
         #         index = (index + 1) % numofParticles
         #     updatedPoseList.append(self.particlecloud.poses[index])  # add this particle
 
+        # Stratified Resamping
+
+
         # Systematic Resamping
         m = len(self.particlecloud.poses) # the number of particles we want, and we want the same number of particles as we initialised.
         cumSum = np.cumsum(normalisedWeights) # cumulative sum (outter ring)
@@ -126,22 +131,24 @@ class PFLocaliser(PFLocaliserBase):
             updatedPose = Pose()
             updatedPose.position.x = gauss(updatedPoseList[i].position.x, 0.2)
             updatedPose.position.y = gauss(updatedPoseList[i].position.y, 0.2)
-            updatedPose.orientation = rotateQuaternion(updatedPoseList[i].orientation, math.radians(gauss(math.degrees(getHeading(updatedPoseList[i].orientation)),2)))
+            updatedPose.orientation = rotateQuaternion(updatedPoseList[i].orientation, math.radians(gauss(math.degrees(getHeading(updatedPoseList[i].orientation)),1)))
 
             updatedPoseArray.poses.append(updatedPose)
 
-        # # Scatter the particles - adding 5% of the total particles to randomly generate
-        # for i in range(15):
-        #     scatterPose = Pose()
-        #     scatterPose.position.x = random.uniform(-10, 10)
-        #     scatterPose.position.y = random.uniform(-10, 10)
-        #     scatterPose.position.z = 0
+        # Scatter the particles - adding 5% of the total particles to randomly generate
+        if (scatterIndex % 5 == 0): # Scatter the particles every 5 iterations.
+            scatterPose = Pose()
+            scatterPose.position.x = random.uniform(-5, 5)
+            scatterPose.position.y = random.uniform(-5, 5)
 
-        #     q_orig = [0,0,0,1]
-        #     q_orig_msg = Quaternion(q_orig[0], q_orig[1], q_orig[2], q_orig[3])
-        #     scatterPose.orientation = rotateQuaternion(q_orig_msg, math.radians(np.random.uniform(0, 360)))
+            q_orig = [0,0,0,1]
+            q_orig_msg = Quaternion(q_orig[0], q_orig[1], q_orig[2], q_orig[3])
+            scatterPose.orientation = rotateQuaternion(q_orig_msg, math.radians(np.random.uniform(0, 360)))
 
-        #     updatedPoseArray.poses.append(scatterPose)
+            updatedPoseArray.poses.pop(random.randrange(len(updatedPoseArray.poses)))
+            updatedPoseArray.poses.append(scatterPose)
+
+            scatterIndex = scatterIndex + 1
 
         self.particlecloud = updatedPoseArray
 
