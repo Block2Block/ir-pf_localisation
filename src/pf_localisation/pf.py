@@ -168,18 +168,20 @@ class PFLocaliser(PFLocaliserBase):
         :Return:
             | (geometry_msgs.msg.Pose) robot's estimated pose.
          """
+        
         numofParticles = len(self.particlecloud.poses)
 
+        # # Remove outlier first method -----------------------------------------------------------------------------
         # outlierFreePoseArrray = PoseArray()
         # #using z score to eliminate outliers in the particle cloud.
         # # Since we are eliminating it based on the position the orientation is not considered in our calculations.
         # meanPositionX = np.mean([self.particlecloud.poses[i].position.x for i in range(len(self.particlecloud.poses))])
         # meanPositionY = np.mean([self.particlecloud.poses[i].position.y for i in range(len(self.particlecloud.poses))])
-        #
+        
         # stdPositionX = np.std([self.particlecloud.poses[i].position.x for i in range(len(self.particlecloud.poses))])
         # stdPositionY = np.std([self.particlecloud.poses[i].position.y for i in range(len(self.particlecloud.poses))])
-        #
-        #
+        
+        
         # #setting the threshold as 3 as of now. It should be changed depending on how dense/tight the cluster is needed.
         # zs_threshold = 3
         # #calculation of average z score
@@ -189,11 +191,11 @@ class PFLocaliser(PFLocaliserBase):
         #     zs_y = (self.particlecloud.poses[cnt].position.y - meanPositionY)/stdPositionY
         #     sumofZS_x = sumofZS_x + zs_x
         #     sumofZS_y = sumofZS_y + zs_y
-        #
+        
         # meanZS_x = sumofZS_x/numofParticles
         # meanZS_y = sumofZS_y/numofParticles
         # avg_ZS = (meanZS_y + meanZS_x)/2
-        #
+        
         # #dropping outlier particles
         # for cnt in range(len(self.particlecloud.poses)):
         #     zs_particlex = (self.particlecloud.poses[cnt].position.x - meanPositionX)/stdPositionX
@@ -201,10 +203,36 @@ class PFLocaliser(PFLocaliserBase):
         #     zs_avg_particle = (zs_particlex + zs_particley)/2
         #     if zs_avg_particle <= avg_ZS:
         #         outlierFreePoseArrray.poses.append(self.particlecloud.poses[cnt])
-        #
+        
         # # returning outlier free updated pose array
-        # self.particlecloud = outlierFreePoseArrray
+        # #self.particlecloud = outlierFreePoseArrray
 
+        # sumofX = 0
+        # sumofY = 0
+        # sumofQX = 0
+        # sumofQY = 0
+        # sumofQZ = 0
+        # sumofQW = 0
+
+        # # Summing the particles
+        # for i in range(len(outlierFreePoseArrray.poses)):
+        #     sumofX = sumofX + outlierFreePoseArrray.poses[i].position.x
+        #     sumofY = sumofY + outlierFreePoseArrray.poses[i].position.y
+
+        #     sumofQX = sumofQX + outlierFreePoseArrray.poses[i].orientation.x
+        #     sumofQY = sumofQY + outlierFreePoseArrray.poses[i].orientation.y
+        #     sumofQZ = sumofQZ + outlierFreePoseArrray.poses[i].orientation.z
+        #     sumofQW = sumofQW + outlierFreePoseArrray.poses[i].orientation.w
+
+        # estimateAveragePose = Pose()
+        # estimateAveragePose.position.x = sumofX / numofParticles
+        # estimateAveragePose.position.y = sumofY / numofParticles
+        # estimateAveragePose.orientation.x = sumofQX / numofParticles
+        # estimateAveragePose.orientation.y = sumofQY / numofParticles
+        # estimateAveragePose.orientation.z = sumofQZ / numofParticles
+        # estimateAveragePose.orientation.w = sumofQW / numofParticles
+
+        # Basic Averge Estimate --------------------------------------------------------------------------
         # These are to store the sum of particles, so we can than take the average, to get the estimate pose.
         sumofX = 0
         sumofY = 0
@@ -224,13 +252,13 @@ class PFLocaliser(PFLocaliserBase):
             sumofQW = sumofQW + self.particlecloud.poses[i].orientation.w
 
         # Averaging the particles
-        averagePose = Pose()
-        averagePose.position.x = sumofX / numofParticles
-        averagePose.position.y = sumofY / numofParticles
-        averagePose.orientation.x = sumofQX
-        averagePose.orientation.y = sumofQY
-        averagePose.orientation.z = sumofQZ
-        averagePose.orientation.w = sumofQW
+        estimateAveragePose = Pose()
+        estimateAveragePose.position.x = sumofX / numofParticles
+        estimateAveragePose.position.y = sumofY / numofParticles
+        estimateAveragePose.orientation.x = sumofQX  # I think I forgot the averge it here???
+        estimateAveragePose.orientation.y = sumofQY
+        estimateAveragePose.orientation.z = sumofQZ
+        estimateAveragePose.orientation.w = sumofQW
 
 
-        return averagePose
+        return estimateAveragePose
