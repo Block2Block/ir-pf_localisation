@@ -22,10 +22,14 @@ class PFLocaliser(PFLocaliserBase):
         # ----- Call the superclass constructor
         super(PFLocaliser, self).__init__()
         
+        # 0, 1, 10 , 100
+
+        noise = 0.5
+
         # ----- Set motion model parameters
-        self.ODOM_ROTATION_NOISE = 5
-        self.ODOM_TRANSLATION_NOISE = 0.5
-        self.ODOM_DRIFT_NOISE = 0.5
+        self.ODOM_ROTATION_NOISE = 0.05
+        self.ODOM_TRANSLATION_NOISE = 0.05
+        self.ODOM_DRIFT_NOISE = 0.05
         # ----- Sensor model parameters
         self.NUMBER_PREDICTED_READINGS = 20     # Number of readings to predict
         
@@ -46,30 +50,30 @@ class PFLocaliser(PFLocaliserBase):
         """
 
         poseArray = PoseArray()
-        numofParticles = 200
+        numofParticles = 500
         noise_parameter = 1
 
         rnd = random.normalvariate(0, 1)
  
 
-        # Method 1 - Initilise around initialpose with gaussian noise
+        # # Method 1 - Initilise around initialpose with gaussian noise
         for i in range(numofParticles):
             # adding gauss random noise to the 
             pose = Pose()
-            pose.position.x = initialpose.pose.pose.position.x + (gauss(0,1) * 1)
-            pose.position.y = initialpose.pose.pose.position.y + (gauss(0,1) * 1)
+            pose.position.x = initialpose.pose.pose.position.x + gauss(0, 0.3)
+            pose.position.y = initialpose.pose.pose.position.y + gauss(0, 0.3)
             pose.position.z = initialpose.pose.pose.position.z
             
-            pose.orientation = rotateQuaternion(initialpose.pose.pose.orientation, math.radians(random.normalvariate(0, 30) + self.ODOM_ROTATION_NOISE)) # might need to change to guassian noise
+            pose.orientation = rotateQuaternion(initialpose.pose.pose.orientation, math.radians(random.gauss(0, 5))) # might need to change to guassian noise
 
             # add the partical to the PoseArray() object
             poseArray.poses.append(pose)
 
-        # Method 2 - Initialise Random Uniformly
+        #Method 2 - Initialise Random Uniformly
         # for i in range(numofParticles):
         #     pose = Pose()
-        #     pose.position.x = uniform(-10,10)
-        #     pose.position.y = uniform(-10,10)
+        #     pose.position.x = uniform(-15,15)
+        #     pose.position.y = uniform(-15,15)
         #     pose.position.z = initialpose.pose.pose.position.z
             
         #     pose.orientation = rotateQuaternion(initialpose.pose.pose.orientation, math.radians(uniform(0, 360))) # might need to change to guassian noise
@@ -104,55 +108,14 @@ class PFLocaliser(PFLocaliserBase):
             normalisedWeights.append(weights[i] * normaliser)
 
 
-
         numofParticles = len(self.particlecloud.poses)
         updatedPoseList = []
         updatedPoseArray = PoseArray() # this will be the new PoseArray to set the self.particlecloud
 
-        # Basic Roulette Wheel Resampling
-        # updatedPoseList = np.random.choice(self.particlecloud.poses, len(self.particlecloud.poses), normalisedWeights)
-        # for i in range(len(updatedPoseList)):
-        #     updatedPoseArray.poses.append(updatedPoseList[i])
-
-        # Another type of Rouletee Wheel thats
-        # index = int(random.random() * numofParticles) # first index drawn at random
-        # beta = 0    
-        # maxWeight = max(normalisedWeights)
-        # for i in range(numofParticles):
-        #     beta = beta + random.random() * 2 * maxWeight  # this is the step we take
-        #     while beta > normalisedWeights[index]: 
-        #         beta = beta - normalisedWeights[index]
-        #         index = (index + 1) % numofParticles
-        #     updatedPoseList.append(self.particlecloud.poses[index])  # add this particle
-
-        # Stratified Resamping
-
-
         # Systematic Resamping
-        m = 2 * numofParticles # the number of particles we want, and we want the same number of particles as we initialised.
+        m = 3 * numofParticles # the number of particles we want, and we want the same number of particles as we initialised.
         cumSum = np.cumsum(normalisedWeights) # cumulative sum (outter ring)
         u = uniform(0, 1/m)
-        # while u == 0:
-        #     u = uniform(0, 1 / m)
-
-        # [0.3, 0.7, 0.1] = 1
-        # [0.3, 0.9, 1] = cumSum
-
-        # u = 0.1
-        # u = 0.2
-        # u = 0.3
-        # u = 0.4
-        # u = 0.5
-        # u = 0.6
-        # u = 0.7
-        # u = 0.8
-        # u = 0.9
-        # u = 1
-
-        # [p1, p2, p3]
-
-
-        # [p1, p1, p1, p2, p2, p2, p2, p2, p2, p3]
 
         i = 0
         j = 0
@@ -165,79 +128,43 @@ class PFLocaliser(PFLocaliserBase):
             else:
                 i = i + 1
 
+        # Reduce back to original particle size
+        while len(updatedPoseList) > numofParticles:
+            updatedPoseList.pop(random.randrange(len(updatedPoseList)))
+
+        # Add noise - need to make this only run in certain condition, such as when the speard of the particles is high
         for i in range(len(updatedPoseList)):
             updatedPose = Pose()
-            updatedPose.position.x = updatedPoseList[i].position.x
-            updatedPose.position.y = updatedPoseList[i].position.y
-            updatedPose.orientation = updatedPoseList[i].orientation
+            updatedPose.position.x = gauss(updatedPoseList[i].position.x, 0.1) #updatedPoseList[i].position.x # gauss(updatedPoseList[i].position.x, 0.1)
+            updatedPose.position.y = gauss(updatedPoseList[i].position.y, 0.1) # updatedPoseList[i].position.y # gauss(updatedPoseList[i].position.y, 0.1)
+            updatedPose.orientation = rotateQuaternion(updatedPoseList[i].orientation, math.radians(gauss(math.degrees(getHeading(updatedPoseList[i].orientation)),0.05))) #updatedPoseList[i].orientation # rotateQuaternion(updatedPoseList[i].orientation, math.radians(gauss(math.degrees(getHeading(updatedPoseList[i].orientation)),0.05)))
 
             updatedPoseArray.poses.append(updatedPose)
 
-        print(len(updatedPoseArray.poses))
-        
-        # reduce back to original particle size
-        while len(updatedPoseArray.poses) > numofParticles:
-            updatedPoseArray.poses.pop(random.randrange(len(updatedPoseArray.poses)))
-        
-        print(len(updatedPoseArray.poses))
-
         print("============================================")
         
-        # Systematic Resamping 2
+        #Scatter the particles
+        if (scatterIndex % 10 == 0): # Scatter the particles every 10 iterations.
 
-        # m = len(self.particlecloud.poses) # the number of particles we want, and we want the same number of particles as we initialised.
-        # position = (random.random() + np.arange(m)) / m
-        # cumSum = np.cumsum(normalisedWeights)
-        # #or  cumSum = np.cumsum(normalisedWeights)
-        
-        # i, j = 0, 0
+                
+            for i in range(int(len(updatedPoseArray.poses) * 0.005)): # 5% scatter particles
 
-        # while i < m:
-        #     if (position[i] < cumSum[j]):
-        #         updatedPoseList.append(self.particlecloud.poses[j])
-        #         i = i + 1
-        #     else:
-        #         j = j + 1
+                randX = np.random.triangular(-15, 0, 15)
+                randY = np.random.triangular(-15, 0, 15)
 
-        # #low variance sampling
-        # #implementing based on the algorithm table 4.4 of Probabilistic Robotics
-        # #resampledPose = []
-        # #resampledPoseArray = PoseArray()
-        # M = len(self.particlecloud.poses)
-        # r = random.uniform(0,1/M)
-        # c = weights[1]
-        # i = 1
-        # for m in range(1,M):
-        #     U = r + (m-1)*(1/M)
-        #     while U>c:
-        #         i += 1
-        #         c += weights[i]
-        #     updatedPoseList.append(self.particlecloud.poses[i])
+                for i in range(3):
+                    scatterPose = Pose()
+                    scatterPose.position.x = gauss(randX, 0.1)
+                    scatterPose.position.y = gauss(randY, 0.1)
 
-        #Add noise - need to make this only run in certain condition, such as when the speard of the particles is high
-        # for i in range(len(updatedPoseList)):
-        #     updatedPose = Pose()
-        #     updatedPose.position.x = gauss(updatedPoseList[i].position.x, 0.3)
-        #     updatedPose.position.y = gauss(updatedPoseList[i].position.y, 0.3)
-        #     updatedPose.orientation = rotateQuaternion(updatedPoseList[i].orientation, math.radians(gauss(math.degrees(getHeading(updatedPoseList[i].orientation)),1)))
+                    q_orig = [0,0,0,1]
+                    q_orig_msg = Quaternion(q_orig[0], q_orig[1], q_orig[2], q_orig[3])
+                    scatterPose.orientation = rotateQuaternion(q_orig_msg, math.radians(np.random.uniform(0, 360)))
 
-        #     updatedPoseArray.poses.append(updatedPose)
+                    updatedPoseArray.poses.pop(random.randrange(len(updatedPoseArray.poses)))
+                    updatedPoseArray.poses.append(scatterPose)
 
-        # Scatter the particles
-        # if (scatterIndex % 10 == 0): # Scatter the particles every 5 iterations.
-        #     for i in range(5):
-        #         scatterPose = Pose()
-        #         scatterPose.position.x = random.uniform(-5, 5)
-        #         scatterPose.position.y = random.uniform(-5, 5)
-
-        #         q_orig = [0,0,0,1]
-        #         q_orig_msg = Quaternion(q_orig[0], q_orig[1], q_orig[2], q_orig[3])
-        #         scatterPose.orientation = rotateQuaternion(q_orig_msg, math.radians(np.random.uniform(0, 360)))
-
-        #         updatedPoseArray.poses.pop(random.randrange(len(updatedPoseArray.poses)))
-        #         updatedPoseArray.poses.append(scatterPose)
-
-        #     scatterIndex = scatterIndex + 1
+            scatterIndex = scatterIndex + 1
 
         self.particlecloud = updatedPoseArray
 
