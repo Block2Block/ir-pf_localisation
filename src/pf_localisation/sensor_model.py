@@ -111,7 +111,6 @@ class SensorModel(object):
     
         p = 1.0 # Sample weight (not a probability!)
         
-        
 
         
         for i, obs_bearing in self.reading_points:
@@ -128,6 +127,7 @@ class SensorModel(object):
             pz = self.predict(obs_range, map_range)
             p += pz*pz*pz # Cube probability: reduce low-probability particles 
             
+
         return p
     
     def predict(self, obs_range, map_range):
