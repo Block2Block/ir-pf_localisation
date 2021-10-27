@@ -64,7 +64,7 @@ class PFLocaliser(PFLocaliserBase):
             pose.position.y = initialpose.pose.pose.position.y + gauss(0, 0.3)
             pose.position.z = initialpose.pose.pose.position.z
             
-            pose.orientation = rotateQuaternion(initialpose.pose.pose.orientation, math.radians(random.gauss(0, 5))) # might need to change to guassian noise
+            pose.orientation = rotateQuaternion(initialpose.pose.pose.orientation, math.radians(np.random.uniform(0, 360))) # might need to change to guassian noise
 
             # add the partical to the PoseArray() object
             poseArray.poses.append(pose)
@@ -135,10 +135,9 @@ class PFLocaliser(PFLocaliserBase):
         # Add noise - need to make this only run in certain condition, such as when the speard of the particles is high
         for i in range(len(updatedPoseList)):
             updatedPose = Pose()
-            updatedPose.position.x = gauss(updatedPoseList[i].position.x, 0.1) #updatedPoseList[i].position.x # gauss(updatedPoseList[i].position.x, 0.1)
-            updatedPose.position.y = gauss(updatedPoseList[i].position.y, 0.1) # updatedPoseList[i].position.y # gauss(updatedPoseList[i].position.y, 0.1)
-            updatedPose.orientation = rotateQuaternion(updatedPoseList[i].orientation, math.radians(gauss(math.degrees(getHeading(updatedPoseList[i].orientation)),0.05))) #updatedPoseList[i].orientation # rotateQuaternion(updatedPoseList[i].orientation, math.radians(gauss(math.degrees(getHeading(updatedPoseList[i].orientation)),0.05)))
-
+            updatedPose.position.x = gauss(updatedPoseList[i].position.x, 0.2) #updatedPoseList[i].position.x # gauss(updatedPoseList[i].position.x, 0.1)
+            updatedPose.position.y = gauss(updatedPoseList[i].position.y, 0.2) # updatedPoseList[i].position.y # gauss(updatedPoseList[i].position.y, 0.1)
+            updatedPose.orientation = rotateQuaternion(updatedPoseList[i].orientation, math.radians(gauss(getHeading(updatedPoseList[i].orientation),5))) # updatedPoseList[i].orientation #updatedPoseList[i].orientation # rotateQuaternion(updatedPoseList[i].orientation, math.radians(gauss(math.degrees(getHeading(updatedPoseList[i].orientation)),0.05)))
             updatedPoseArray.poses.append(updatedPose)
 
         print("============================================")
@@ -146,8 +145,7 @@ class PFLocaliser(PFLocaliserBase):
         #Scatter the particles
         if (scatterIndex % 10 == 0): # Scatter the particles every 10 iterations.
 
-                
-            for i in range(int(len(updatedPoseArray.poses) * 0.005)): # 5% scatter particles
+            for i in range(int(len(updatedPoseArray.poses) * 0.01)): # 5% scatter particles
 
                 randX = np.random.triangular(-15, 0, 15)
                 randY = np.random.triangular(-15, 0, 15)
